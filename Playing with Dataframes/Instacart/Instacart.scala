@@ -1,12 +1,7 @@
 import org.apache.spark._
-import org.apache.spark.SparkContext._
-import org.apache.spark.sql._
 import org.apache.log4j._
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.functions.{sum, col}
-import org.apache.spark.sql.types.{DataType, DateType, TimestampType}
-import org.apache.spark.sql.{DataFrame, Row, SparkSession}
-import org.apache.spark.sql.Column
 
 object Instacart extends App {
 
