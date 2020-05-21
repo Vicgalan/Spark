@@ -1,0 +1,59 @@
+import org.apache.log4j.{Level, Logger}
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.functions.substring
+import org.apache.spark.sql.expressions._
+import org.apache.spark.sql.functions._
+
+/** End users request to know in an additional columns:
+* 1- The difference number of sales compared to the previous day by product and supermarket
+* 2- The percentage of daily sales that it represents per month
+*  */
+
+Logger.getLogger("org").setLevel(Level.ERROR)
+
+val spark = org.apache.spark.sql.SparkSession.builder
+.master("local[*]")
+.appName("Calculation")
+.getOrCreate
+
+import spark.implicits._
+
+val window  = Window.partitionBy("supermarket_id","product").orderBy("month")
+
+val products_table = spark.read
+  .format ("csv")
+  .option ("header", "true")
+  .option ("delimiter", ";")
+  .load ("src/data/ProductsSupermarket.csv")
+  .withColumn("Date",substring($"full_date",1,10).cast("date"))
+  .withColumn("Month",substring($"full_date",1,7))
+  .orderBy("Date")
+
+val columns: List[String] =  List("supermarket_id", "product", "City","aisle","total_orders",
+  "Date","differ_sales","Sales_percent")
+
+//    val columns = Seq[String]("col1", "col2", "col3")
+//    val colNames = columns.map(name => col(name))
+//    val df = df.select(colNames:_*)
+
+differ_daily_sales(products_table).join(total_month(products_table),
+  Seq("supermarket_id","product","Month"),"inner")
+  .withColumn("Sales_percent", round(
+  ($"total_orders"/ $"Total_orders_month") * 100,2))
+  .select(columns.head, columns.tail:_*).show()
+
+def differ_daily_sales(table:DataFrame): DataFrame = {
+
+  table.withColumn("Total_orders_day_before",
+	lag(col("total_orders"),1,0).over(window))
+	.withColumn("differ_sales",
+	  col("total_orders") - col("Total_orders_day_before"))
+
+}
+
+def total_month(table:DataFrame): DataFrame = {
+
+  table.groupBy("supermarket_id", "product", "Month")
+	.agg(sum("total_orders").alias("Total_orders_month"))
+
+}
