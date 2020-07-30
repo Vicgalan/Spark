@@ -8,7 +8,7 @@ class doSomething {
   Logger.getLogger("org").setLevel(Level.ERROR)
 
   //create a SparkSession using every core of the local machine
-  val spark = sql.SparkSession
+  val spark = org.apache.spark.sql.SparkSession
     .builder
     .appName("NAME")
     .master("local[*]")
